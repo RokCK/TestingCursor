@@ -1,0 +1,17 @@
+services:
+  gato-app:
+    build: .
+    container_name: gato
+    ports:
+      - "80:80"
+    volumes:
+      - .:/app
+    restart: unless-stopped
+    environment:
+      - PORT=80
+    networks:
+      - gato-network
+
+networks:
+  gato-network:
+    driver: bridge

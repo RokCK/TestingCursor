@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gato</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath fill='%23667eea' d='M50 20c-5 0-10 2-13 5-3-3-8-5-13-5-8 0-15 7-15 15 0 8 5 14 12 16v20c0 5 4 9 9 9h20c5 0 9-4 9-9V51c7-2 12-8 12-16 0-8-7-15-15-15z'/%3E%3Ccircle fill='white' cx='40' cy='35' r='3'/%3E%3Ccircle fill='white' cx='60' cy='35' r='3'/%3E%3Cpath fill='none' stroke='white' stroke-width='2' stroke-linecap='round' d='M45 45c2 2 5 2 7 0'/%3E%3Cpath fill='%23667eea' d='M30 25c-2 0-4 2-4 4s2 4 4 4 4-2 4-4-2-4-4-4zm40 0c-2 0-4 2-4 4s2 4 4 4 4-2 4-4-2-4-4-4z'/%3E%3C/svg%3E">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            color: white;
+        }
+
+        .container {
+            text-align: center;
+            width: 100%;
+            max-width: 600px;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .instructions {
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+            opacity: 0.9;
+        }
+
+        .current-player {
+            font-size: 1.5rem;
+            margin-bottom: 30px;
+            font-weight: bold;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto 30px;
+            aspect-ratio: 1;
+        }
+
+        .cell {
+            background: rgba(255, 255, 255, 0.2);
+            border: 3px solid rgba(255, 255, 255, 0.5);
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 4rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            aspect-ratio: 1;
+            min-height: 0;
+            width: 100%;
+        }
+
+        .cell:hover:not(.disabled) {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+
+        .cell.disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .cell.x {
+            color: #ff6b6b;
+        }
+
+        .cell.o {
+            color: #4ecdc4;
+        }
+
+        .message {
+            font-size: 2rem;
+            margin-bottom: 20px;
+            min-height: 60px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .reset-btn {
+            background: rgba(255, 255, 255, 0.3);
+            border: 2px solid white;
+            color: white;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            font-weight: bold;
+        }
+
+        .reset-btn:hover {
+            background: rgba(255, 255, 255, 0.5);
+            transform: scale(1.05);
+        }
+
+        .reset-btn:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>GATO</h1>
+        <div class="instructions">Haz clic en una casilla para jugar</div>
+        <div class="current-player" id="currentPlayer">Turno: X</div>
+        <div class="board" id="board"></div>
+        <div class="message" id="message"></div>
+        <button class="reset-btn" onclick="resetGame()">Nuevo Juego</button>
+    </div>
+
+    <script>
+        let gameState = {
+            board: ['', '', '', '', '', '', '', '', ''],
+            current_player: 'X',
+            winner: null,
+            game_over: false
+        };
+
+        function initBoard() {
+            const board = document.getElementById('board');
+            board.innerHTML = '';
+            
+            for (let i = 0; i < 9; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.dataset.index = i;
+                cell.addEventListener('click', () => makeMove(i));
+                board.appendChild(cell);
+            }
+            
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            const cells = document.querySelectorAll('.cell');
+            const currentPlayerEl = document.getElementById('currentPlayer');
+            const messageEl = document.getElementById('message');
+            
+            cells.forEach((cell, index) => {
+                const value = gameState.board[index];
+                cell.textContent = value;
+                cell.className = 'cell';
+                
+                if (value === 'X') {
+                    cell.classList.add('x');
+                } else if (value === 'O') {
+                    cell.classList.add('o');
+                }
+                
+                if (gameState.game_over || value !== '') {
+                    cell.classList.add('disabled');
+                }
+            });
+            
+            if (gameState.game_over) {
+                if (gameState.winner === 'Tie') {
+                    currentPlayerEl.textContent = '';
+                    messageEl.textContent = '¡Empate!';
+                } else {
+                    currentPlayerEl.textContent = '';
+                    messageEl.textContent = `¡${gameState.winner} gana!`;
+                }
+            } else {
+                currentPlayerEl.textContent = `Turno: ${gameState.current_player}`;
+                messageEl.textContent = '';
+            }
+        }
+
+        async function makeMove(position) {
+            if (gameState.game_over || gameState.board[position] !== '') {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/move', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ position: position })
+                });
+                
+                if (response.ok) {
+                    gameState = await response.json();
+                    updateDisplay();
+                } else {
+                    const error = await response.json();
+                    console.error('Error:', error);
+                }
+            } catch (error) {
+                console.error('Error al hacer movimiento:', error);
+            }
+        }
+
+        async function resetGame() {
+            try {
+                const response = await fetch('/reset', {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    gameState = await response.json();
+                    updateDisplay();
+                }
+            } catch (error) {
+                console.error('Error al reiniciar:', error);
+            }
+        }
+
+        async function loadGameState() {
+            try {
+                const response = await fetch('/state');
+                if (response.ok) {
+                    gameState = await response.json();
+                    updateDisplay();
+                }
+            } catch (error) {
+                console.error('Error al cargar estado:', error);
+            }
+        }
+
+        // Inicializar el juego
+        initBoard();
+        loadGameState();
+    </script>
+</body>
+</html>
